@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Galeria de Vídeos</title>
+</head>
+<body>
+    <h1>Galeria</h1>
+    <ul>
+        {% for v in videos %}
+        <li>
+            {{ v[1] }} — <a href="{{ url_for('media', filename=v[2].replace('media/', '')) }}">Ver vídeo</a>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
