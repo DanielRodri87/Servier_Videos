@@ -71,7 +71,7 @@ def upload():
     return {"id": uid, "status": "uploaded"}
 
 # --- Galeria ---
-@app.route("/gallery")
+@app.route("/")
 def gallery():
     with sqlite3.connect(DB) as conn:
         rows = conn.execute("SELECT id, original_name, path_original FROM videos").fetchall()
