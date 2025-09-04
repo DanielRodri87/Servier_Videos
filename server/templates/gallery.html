@@ -68,8 +68,9 @@
     <div class="gallery">
         {% for v in videos %}
         <div class="video-card">
-            <a href="{{ url_for('media', filename=v[2].replace('media/', '').replace('\\','/')) }}" target="_blank">
-                <img src="{{ url_for('media', filename=v[3]) }}" alt="{{ v[1] }}">
+            <!-- Usando pasta static para todas as imagens -->
+            <a href="{{ url_for('static', filename='media/' ~ v[2]|replace('media/', '')|replace('\\','/')) }}" target="_blank">
+                <img src="{{ url_for('static', filename='media/' ~ v[3]|replace('media/', '')|replace('\\','/')) }}" alt="{{ v[1] }}">
             </a>
             <p>{{ v[1] }}</p>
             <div class="filter-buttons">
@@ -79,5 +80,9 @@
         </div>
         {% endfor %}
     </div>
+
+    <!-- Imagem do cavalo fixa -->
+    <img src="/static/client/cavaloo.png" alt="Cavalo" style="position: fixed; left: 20px; bottom: 20px; width: 60px; height: auto; z-index: 100;">
+
 </body>
 </html>
