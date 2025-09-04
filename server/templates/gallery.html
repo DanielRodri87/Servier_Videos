@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Galeria de Vídeos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        .video-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            width: 200px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .video-card img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .video-card p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .video-card a {
+            display: inline-block;
+            margin-bottom: 8px;
+            text-decoration: none;
+            color: #007BFF;
+        }
+        .video-card a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Galeria de Vídeos</h1>
+    <div class="gallery">
+        {% for v in videos %}
+        <div class="video-card">
+            <a href="{{ url_for('media', filename=v[2].replace('media/', '').replace('\\','/')) }}" target="_blank">
+                <img src="{{ url_for('media', filename=v[3]) }}" alt="{{ v[1] }}">
+            </a>
+            <p>{{ v[1] }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
