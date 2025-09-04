@@ -3,6 +3,7 @@ import sqlite3
 DB = "videos.db"
 
 def init_db():
+    # ID do vídeo original é usado para referenciar o vídeo fonte
     with sqlite3.connect(DB) as conn:
         conn.execute("""
         CREATE TABLE IF NOT EXISTS videos (
@@ -16,9 +17,11 @@ def init_db():
             width INTEGER,
             height INTEGER,
             filter TEXT,
+            original_video_id TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             path_original TEXT,
-            path_processed TEXT
+            path_processed TEXT,
+            FOREIGN KEY(original_video_id) REFERENCES videos(id)
         );
         """)
     print(f"Banco {DB} inicializado com sucesso!")

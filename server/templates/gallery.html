@@ -45,6 +45,22 @@
         .video-card a:hover {
             text-decoration: underline;
         }
+        .filter-buttons {
+            margin: 5px 0;
+        }
+        .filter-button {
+            padding: 3px 8px;
+            margin: 0 2px;
+            border: 1px solid #007BFF;
+            border-radius: 3px;
+            background: white;
+            color: #007BFF;
+            cursor: pointer;
+        }
+        .filter-button:hover {
+            background: #007BFF;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -56,6 +72,10 @@
                 <img src="{{ url_for('media', filename=v[3]) }}" alt="{{ v[1] }}">
             </a>
             <p>{{ v[1] }}</p>
+            <div class="filter-buttons">
+                <button class="filter-button" onclick="window.location.href='/apply_filter/{{v[0]}}/gray'">Cinza</button>
+                <button class="filter-button" onclick="window.location.href='/apply_filter/{{v[0]}}/clahe'">CLAHE</button>
+            </div>
         </div>
         {% endfor %}
     </div>
