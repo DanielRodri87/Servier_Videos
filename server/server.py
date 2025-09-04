@@ -4,6 +4,7 @@ import json
 import sqlite3
 import cv2
 import datetime
+import numpy as np
 from flask import Flask, request, render_template, send_from_directory, url_for
 
 # Move BASE_DIR definition and creation to top
@@ -26,13 +27,66 @@ def extract_metadata(path):
     return duration, fps, width, height
 
 # --- Função para extrair o primeiro frame ---
-def extract_thumbnail(video_path, thumb_path):
+def extract_thumbnail(video_path, thumb_path, filter_name=None):
     cap = cv2.VideoCapture(video_path)
     success, frame = cap.read()
     if success:
+        if filter_name:
+            frame = apply_filter(frame, filter_name)
         cv2.imwrite(thumb_path, frame)
     cap.release()
     return success
+
+# --- Função para aplicar filtros ---
+def apply_filter(frame, filter_name):
+    if filter_name == 'gray':
+        return cv2.cvtColor(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR)
+    elif filter_name == 'clahe':
+        lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+        cl = clahe.apply(l)
+        limg = cv2.merge((cl,a,b))
+        return cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+    return frame
+
+def process_video(input_path, output_path, filter_name):
+    # Primeiro salva com codec básico em arquivo temporário
+    temp_output = output_path + '.temp.avi'
+    cap = cv2.VideoCapture(input_path)
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
+    out = cv2.VideoWriter(temp_output, cv2.VideoWriter_fourcc(*'XVID'), fps, (width, height))
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+            
+        processed = apply_filter(frame, filter_name)
+        out.write(processed)
+        
+    cap.release()
+    out.release()
+
+    # Converte para MP4 com H.264 usando FFMPEG
+    import subprocess
+    try:
+        subprocess.run([
+            'ffmpeg', '-y',  # Sobrescreve arquivo existente
+            '-i', temp_output,  # Arquivo de entrada
+            '-c:v', 'libx264',  # Codec H.264
+            '-preset', 'medium',  # Preset de compressão
+            '-crf', '23',  # Qualidade (menor = melhor)
+            '-pix_fmt', 'yuv420p',  # Formato de pixel compatível
+            output_path  # Arquivo de saída
+        ], check=True)
+    finally:
+        # Limpa arquivo temporário
+        if os.path.exists(temp_output):
+            os.remove(temp_output)
 
 # --- Upload ---
 @app.route("/upload", methods=["POST"])
@@ -91,25 +145,97 @@ def upload():
 
     return {"id": uid, "status": "uploaded", "thumb": meta["thumb"]}
 
+# --- Aplicar filtro ---
+@app.route("/apply_filter/<video_id>/<filter_name>")
+def apply_filter_route(video_id, filter_name):
+    if filter_name not in ['gray', 'clahe']:
+        return "Filtro inválido", 400
+        
+    with sqlite3.connect(DB) as conn:
+        # Busca vídeo original com colunas específicas
+        video = conn.execute("""
+            SELECT id, original_name, path_original, duration_sec, fps, 
+                   width, height, size_bytes 
+            FROM videos WHERE id=?""", (video_id,)).fetchone()
+        if not video:
+            return "Vídeo não encontrado", 404
+            
+    # Usa o mesmo diretório base do vídeo original
+    original_path = video[2]  # path_original é o índice 2 agora
+    base_dir = os.path.dirname(os.path.dirname(original_path))
+    processed_dir = os.path.join(base_dir, "processed")
+    
+    os.makedirs(processed_dir, exist_ok=True)
+    
+    try:
+        # Processa o vídeo no diretório processed
+        output_path = os.path.join(processed_dir, f"video_{filter_name}.mp4")
+        process_video(original_path, output_path, filter_name)
+        
+        # Gera thumbnail com o filtro aplicado
+        thumb_path = os.path.join(base_dir, "thumbs", f"thumb_{filter_name}.jpg")
+        extract_thumbnail(output_path, thumb_path, filter_name)
+        
+        # Insere no banco
+        with sqlite3.connect(DB) as conn:
+            conn.execute("""
+            INSERT INTO videos (id, original_name, original_ext, mime_type, size_bytes,
+                              duration_sec, fps, width, height, filter, original_video_id,
+                              path_original, path_processed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (str(uuid.uuid4()), f"{video[1]}_{filter_name}", "mp4", "video/mp4",
+                  os.path.getsize(output_path), video[3], video[4], video[5], 
+                  video[6], filter_name, video_id, output_path, processed_dir))
+                  
+        return {"status": "processed", "filter": filter_name}
+        
+    except Exception as e:
+        print(f"Error processing video: {str(e)}")  # Debug log
+        return f"Erro ao processar vídeo: {str(e)}", 500
+
 # --- Galeria ---
 @app.route("/")
 def gallery():
     with sqlite3.connect(DB) as conn:
-        rows = conn.execute("SELECT id, original_name, path_original FROM videos").fetchall()
+        rows = conn.execute("""
+            SELECT id, original_name, path_original, filter 
+            FROM videos ORDER BY created_at DESC""").fetchall()
 
     videos = []
     for r in rows:
-        uid, name, path_orig = r
-        # Use the same path structure as in meta.json
-        base_path = f"videos/{datetime.date.today():%Y/%m/%d}/{uid}"
-        video_path = f"{base_path}/original/video.{os.path.splitext(name)[1]}"
-        thumb_path = f"{base_path}/thumbs/thumb.jpg"
-        videos.append((uid, name, video_path, thumb_path))
+        uid, name, path_orig, filter_name = r
+        video_dir = os.path.dirname(os.path.dirname(path_orig))
+        video_path = os.path.relpath(path_orig, BASE_DIR)
+        
+        # Define thumb path based on filter
+        if filter_name:
+            thumb_name = f"thumb_{filter_name}.jpg"
+        else:
+            thumb_name = "thumb.jpg"
+        
+        thumb_path = os.path.join(os.path.relpath(video_dir, BASE_DIR), "thumbs", thumb_name)
+        
+        # Adiciona nome do filtro ao título se existir
+        display_name = f"{name} ({filter_name})" if filter_name else name
+        videos.append((uid, display_name, video_path, thumb_path))
 
     return render_template("gallery.html", videos=videos)
 
 # --- Servir arquivos ---
 @app.route("/media/<path:filename>")
+def media(filename):
+    full_path = os.path.join(BASE_DIR, filename)
+    directory = os.path.dirname(full_path)
+    filename = os.path.basename(full_path)
+    
+    if not os.path.exists(full_path):
+        print(f"File not found: {full_path}")  # Debug log
+        return f"File not found: {filename}", 404
+        
+    return send_from_directory(directory, filename)
+
+if __name__ == "__main__":
+    app.run(debug=True)
 def media(filename):
     full_path = os.path.join(BASE_DIR, filename)
     directory = os.path.dirname(full_path)
