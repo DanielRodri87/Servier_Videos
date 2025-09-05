@@ -39,7 +39,8 @@ def exit_fullscreen(event=None):
 root.bind("<Escape>", exit_fullscreen)
 
 
-img_path = os.path.join(os.path.dirname(__file__), "upload.png")
+# Change image paths to use client directory
+img_path = os.path.join("client", "upload.png")
 img = Image.open(img_path)
 img = img.resize((120, 120), Image.LANCZOS)
 photo = ctk.CTkImage(light_image=img, size=(120, 120))
@@ -51,7 +52,7 @@ label = ctk.CTkLabel(
     anchor="w", justify="left",
     fg_color="transparent"
 )
-label.pack(pady=(200, 5), anchor="w", padx=250)  # (topo, entre label e botão)
+label.pack(pady=(250, 1), anchor="w", padx=500)  # (topo, entre label e botão)
 
 btn = ctk.CTkButton(
     root,
@@ -69,25 +70,26 @@ btn = ctk.CTkButton(
     
    
 )
-btn.pack(pady=(50, 200))  # (entre label e botão, depois espaço abaixo)
+btn.pack(pady=(100, 200))  # (entre label e botão, depois espaço abaixo)
 
 
 
-# Adiciona uma imagem de fundo centralizada
-bg_img_path = os.path.join(os.path.dirname(__file__), "filme.png")
+# Update background image path
+bg_img_path = os.path.join("client", "filme.png")
 if os.path.exists(bg_img_path):
-    desired_width = 1800
-    desired_height = 1400
+    desired_width = 2400
+    desired_height = 2000
     bg_img = Image.open(bg_img_path)
     bg_img = bg_img.resize((desired_width, desired_height), Image.LANCZOS)
     bg_photo = ctk.CTkImage(light_image=bg_img, size=(desired_width, desired_height))
     bg_label = ctk.CTkLabel(root, image=bg_photo, text="")
     # Mova a imagem mais para a direita ajustando relx (ex: 0.7)
-    bg_label.place(relx=0.7, rely=0.5, anchor="center")
+    bg_label.place(relx=0.6, rely=0.5, anchor="center")
     bg_label.lower()
 
 
-corner_img_path = os.path.join(os.path.dirname(__file__), "cavaloo.png")
+# Update corner image path
+corner_img_path = os.path.join("client", "cavaloo.png")
 if os.path.exists(corner_img_path):
     corner_img = Image.open(corner_img_path)
     corner_img = corner_img.resize((250, 250), Image.LANCZOS)
