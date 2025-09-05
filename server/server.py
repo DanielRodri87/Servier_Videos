@@ -5,6 +5,7 @@ import sqlite3
 import cv2
 import datetime
 import numpy as np
+import socket
 from flask import Flask, request, render_template, send_from_directory, url_for
 
 # Move BASE_DIR definition and update static folder config
@@ -19,6 +20,18 @@ app = Flask(__name__,
 )
 
 DB = "videos.db"
+
+# Função para obter o IP local da máquina
+def get_local_ip():
+    try:
+        # Conecta a um endereço externo para descobrir o IP local
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        return local_ip
+    except Exception:
+        return "127.0.0.1"
 
 # --- Função para extrair metadados ---
 def extract_metadata(path):
@@ -228,29 +241,44 @@ def gallery():
         videos.append((uid, display_name, video_path, thumb_path))
 
     return render_template("gallery.html", videos=videos)
+
+# Rota para servir arquivos de mídia
+@app.route("/media/<path:filename>")
+def media(filename):
+    full_path = os.path.join(BASE_DIR, filename)
+    directory = os.path.dirname(full_path)
+    filename = os.path.basename(full_path)
+    
     if not os.path.exists(full_path):
         print(f"File not found: {full_path}")  # Debug log
         return f"File not found: {filename}", 404
         
     return send_from_directory(directory, filename)
 
-def get_ip_address():
-    import socket
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # Não precisa ser uma conexão real
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-    except Exception:
-        ip = "127.0.0.1"
-    finally:
-        s.close()
-    return ip
-
 if __name__ == "__main__":
-    ip = get_ip_address()
-    port = 5000  # porta padrão do Flask
-    print(f"\nServidor rodando em: http://{ip}:{port}")
-    print(f"IP: {ip}")
-    print(f"Porta: {port}\n")
-    app.run(host="0.0.0.0", port=port, debug=True)
+    # Configurações para executar na rede local
+    HOST = "0.0.0.0"  # Aceita conexões de qualquer IP
+    PORT = 5000       # Porta padrão do Flask
+    
+    # Obtém o IP local da máquina
+    local_ip = get_local_ip()
+    
+    print("=" * 60)
+    print("🎬 SERVIDOR DE VÍDEOS INICIADO")
+    print("=" * 60)
+    print(f"📱 Acesso Local:      http://localhost:{PORT}")
+    print(f"🌐 Acesso na Rede:    http://{local_ip}:{PORT}")
+    print("=" * 60)
+    print("💡 Para acessar de outros computadores na rede:")
+    print(f"   Digite no navegador: http://{local_ip}:{PORT}")
+    print("=" * 60)
+    print("🔥 Servidor rodando... Pressione Ctrl+C para parar")
+    print("=" * 60)
+    
+    # Inicia o servidor Flask
+    app.run(
+        host=HOST,
+        port=PORT,
+        debug=True,
+        use_reloader=False  # Evita reinicializar duas vezes no modo debug
+    )
