@@ -7,13 +7,18 @@ import datetime
 import numpy as np
 from flask import Flask, request, render_template, send_from_directory, url_for
 
-# Move BASE_DIR definition and creation to top
-BASE_DIR = os.path.abspath("media")
-if not os.path.exists(BASE_DIR):
-    os.makedirs(BASE_DIR)
+# Move BASE_DIR definition and update static folder config
+BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+MEDIA_DIR = os.path.join(BASE_DIR, "media")
+if not os.path.exists(MEDIA_DIR):
+    os.makedirs(MEDIA_DIR)
+
+app = Flask(__name__, 
+    static_folder=BASE_DIR,  # Define pasta raiz como static
+    static_url_path='/static'  # URL prefix para arquivos estáticos
+)
 
 DB = "videos.db"
-app = Flask(__name__)
 
 # --- Função para extrair metadados ---
 def extract_metadata(path):
@@ -97,7 +102,7 @@ def upload():
     
     uid = str(uuid.uuid4())
     today = datetime.date.today()
-    save_dir = os.path.join(BASE_DIR, "videos", f"{today:%Y/%m/%d}", uid)
+    save_dir = os.path.join(MEDIA_DIR, "videos", f"{today:%Y/%m/%d}", uid)
     original_dir = os.path.join(save_dir, "original")
     processed_dir = os.path.join(save_dir, "processed")
     thumbs_dir = os.path.join(save_dir, "thumbs")
@@ -205,6 +210,8 @@ def gallery():
     for r in rows:
         uid, name, path_orig, filter_name = r
         video_dir = os.path.dirname(os.path.dirname(path_orig))
+        
+        # Ajusta os caminhos para usar paths relativos ao BASE_DIR
         video_path = os.path.relpath(path_orig, BASE_DIR)
         
         # Define thumb path based on filter
@@ -213,21 +220,14 @@ def gallery():
         else:
             thumb_name = "thumb.jpg"
         
-        thumb_path = os.path.join(os.path.relpath(video_dir, BASE_DIR), "thumbs", thumb_name)
+        thumb_dir = os.path.join(os.path.dirname(os.path.dirname(path_orig)), "thumbs")
+        thumb_path = os.path.join(os.path.relpath(thumb_dir, BASE_DIR), thumb_name)
         
         # Adiciona nome do filtro ao título se existir
         display_name = f"{name} ({filter_name})" if filter_name else name
         videos.append((uid, display_name, video_path, thumb_path))
 
     return render_template("gallery.html", videos=videos)
-
-# --- Servir arquivos ---
-@app.route("/media/<path:filename>")
-def media(filename):
-    full_path = os.path.join(BASE_DIR, filename)
-    directory = os.path.dirname(full_path)
-    filename = os.path.basename(full_path)
-    
     if not os.path.exists(full_path):
         print(f"File not found: {full_path}")  # Debug log
         return f"File not found: {filename}", 404

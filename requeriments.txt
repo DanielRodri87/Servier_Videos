@@ -1,3 +1,6 @@
 Flask
 opencv-python
 python-magic
+customtkinter
+pillow
+requests
