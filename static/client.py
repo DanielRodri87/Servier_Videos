@@ -4,9 +4,45 @@ import requests
 import os
 from PIL import Image
 
-SERVER_URL = "http://127.0.0.1:5000/upload"
+def get_server_config():
+    dialog = ctk.CTkToplevel()
+    dialog.title("Configuração do Servidor")
+    dialog.geometry("300x150")
+    
+    ip_var = ctk.StringVar()
+    port_var = ctk.StringVar()
+    
+    ip_label = ctk.CTkLabel(dialog, text="IP do servidor:")
+    ip_label.pack(pady=5)
+    ip_entry = ctk.CTkEntry(dialog, textvariable=ip_var)
+    ip_entry.pack(pady=5)
+    
+    port_label = ctk.CTkLabel(dialog, text="Porta do servidor:")
+    port_label.pack(pady=5)
+    port_entry = ctk.CTkEntry(dialog, textvariable=port_var)
+    port_entry.pack(pady=5)
+    
+    result = {"url": None}
+    
+    def on_submit():
+        if ip_var.get() and port_var.get():
+            result["url"] = f"http://{ip_var.get()}:{port_var.get()}/upload"
+        dialog.destroy()
+    
+    submit_btn = ctk.CTkButton(dialog, text="Conectar", command=on_submit)
+    submit_btn.pack(pady=10)
+    
+    dialog.grab_set()  # Make the dialog modal
+    dialog.wait_window()  # Wait for the dialog to be closed
+    
+    return result["url"]
 
 def upload_video():
+    server_url = get_server_config()
+    if not server_url:
+        messagebox.showerror("Erro", "É necessário informar IP e porta do servidor")
+        return
+        
     filepath = filedialog.askopenfilename(
         title="Selecione um vídeo",
         filetypes=[("Vídeos", "*.mp4 *.avi *.mov *.mkv *.wmv")]
@@ -17,7 +53,7 @@ def upload_video():
     try:
         with open(filepath, "rb") as f:
             files = {"video": (os.path.basename(filepath), f, "video/mp4")}
-            response = requests.post(SERVER_URL, files=files)
+            response = requests.post(server_url, files=files)
         
         if response.status_code == 200:
             messagebox.showinfo("Sucesso", f"Upload concluído!\n{response.json()}")

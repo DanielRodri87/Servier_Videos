@@ -234,18 +234,23 @@ def gallery():
         
     return send_from_directory(directory, filename)
 
-if __name__ == "__main__":
-    app.run(debug=True)
-def media(filename):
-    full_path = os.path.join(BASE_DIR, filename)
-    directory = os.path.dirname(full_path)
-    filename = os.path.basename(full_path)
-    
-    if not os.path.exists(full_path):
-        print(f"File not found: {full_path}")  # Debug log
-        return f"File not found: {filename}", 404
-        
-    return send_from_directory(directory, filename)
+def get_ip_address():
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # Não precisa ser uma conexão real
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = "127.0.0.1"
+    finally:
+        s.close()
+    return ip
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    ip = get_ip_address()
+    port = 5000  # porta padrão do Flask
+    print(f"\nServidor rodando em: http://{ip}:{port}")
+    print(f"IP: {ip}")
+    print(f"Porta: {port}\n")
+    app.run(host="0.0.0.0", port=port, debug=True)
