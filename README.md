@@ -19,10 +19,13 @@ Este projeto consiste em um sistema de upload e processamento de vídeos com int
 ## 🔧 Instalação
 
 1. Clone o repositório:
+
 ```bash
-git clone https://github.com/DanielRodri87/Servier_Videos```
+git clone https://github.com/DanielRodri87/Servier_Videos
+```
 
 2. Crie e ative um ambiente virtual:
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
@@ -31,11 +34,13 @@ venv\Scripts\activate  # Windows
 ```
 
 3. Instale as dependências:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4. Inicialize o banco de dados:
+
 ```bash
 cd server
 python init_db.py
@@ -44,12 +49,14 @@ python init_db.py
 ## ⚡ Executando o Sistema
 
 1. Inicie o servidor Flask:
+
 ```bash
 cd server
 python server.py
 ```
 
 2. Em outro terminal, execute o cliente desktop:
+
 ```bash
 cd static
 python client.py
@@ -59,12 +66,12 @@ python client.py
 
 ## 📸 Screenshots
 
-### Interface do Cliente
-![Interface do Cliente](screenshots/foto_client.png)
+### Interface do Cliente Desktop
+![Interface do Cliente](screenshots/client.png)
 *Interface desktop do cliente para upload de vídeos*
 
-### Interface do Servidor
-![Interface do Servidor](screenshots/foto_servidor.png)
+### Interface da Galeria Web
+![Interface do Servidor](screenshots/server.png)
 *Interface web do servidor mostrando a galeria de vídeos*
 
 ## 🛠️ Tecnologias Utilizadas
@@ -86,10 +93,9 @@ Servier_Videos-walison/
 │       └── gallery.html
 ├── static/
 │   └── client.py
+├── screenshots/
+│   ├── client.png
+│   └── server.png
 └── media/
     └── videos/
 ```
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
